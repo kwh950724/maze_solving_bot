@@ -16,13 +16,15 @@ protected:
 	float angular_z_;
 	
 	// float range variable
-	
-
+	float max_range_;
+	float min_range_;
 public:
 	Mazebot(void) {
 		pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
 		sub_ = nh_.subscribe("/scan", 1, &Mazebot::msgCallback, this);
 		serv_ = nh_.advertiseService("/req_robot_control", &Mazebot::manipulation, this);
+		max_range_ = 2.5;
+		min_range_ = 0.5;
 		ROS_INFO("MAZEBOT READY FOR ACTION.");
 	}
 
@@ -61,16 +63,60 @@ public:
 	// maze solving algorithm
 	void wallFollow(const sensor_msgs::LaserScan scan) {
 		float head_dist = scan.ranges[0];
-		if (head_dist < 0.6) {
-			linear_x_ = 0;
-			angular_z_ = 0.2;
-			ROS_WARN("WALL AHEAD, EMERGENCY STOP.");
+		int left_count = 0;
+		int right_count = 0;
+		int left_clash_count = 0;
+		int right_clash_count = 0;
+
+		for (int i = 23; i < 68; i += 22) {
+			if (scan.ranges[i] < max_range_ && scan.ranges[i] > min_range_) {
+				left_count += 1;
+			} 	
+			if (scan.ranges[i] < min_range_) {
+				left_clash_count += 1;
+			} 
 		}
-		else {
+
+		for (int i = 293; i < 338; i += 22) {
+			if (scan.ranges[i] < max_range_ && scan.ranges[i] > min_range_) {
+				right_count += 1;
+			}
+			if (scan.ranges[i] < min_range_) {
+				right_clash_count += 1;
+			} 
+		}
+
+		ROS_INFO("LEFT COUNT = %d, LEFT CLASH COUNT = %d", left_count, left_clash_count);
+		ROS_INFO("RIGHT COUNT = %d, RIGHT CLASH COUNT = %d", right_count, right_clash_count);
+	
+		if (left_count == right_count) {
+			ROS_INFO("GO STRAIGHT.");
 			linear_x_ = 0.3;
 			angular_z_ = 0;
 		}
-				
+		else if (left_count < right_count) {
+			ROS_INFO("TURN LEFT.");
+			linear_x_ = 0.2;
+			angular_z_ = -0.3;
+		}
+		else {
+			ROS_INFO("TURN RIGHT.");
+			linear_x_ = 0.2;
+			angular_z_ = 0.3;
+		}
+
+		if (left_clash_count > 0) {
+			ROS_WARN("LEFT WALL IS TOO CLOSE.");
+			linear_x_ = 0.2;
+			angular_z_ = 0.2; 
+		}
+		
+		if (right_clash_count > 0) {
+			ROS_WARN("RIGHT WALL IS TOO CLOSE.");
+			linear_x_ = 0.2;
+			angular_z_ = -0.2;
+		}		
+
 		ROS_INFO("VELOCITY, STEER UP TO DATE.");	
 	}	
 };
@@ -81,4 +127,4 @@ int main(int argc, char **argv) {
 	ros::spin();
 
 	return 0;
-}
+};
