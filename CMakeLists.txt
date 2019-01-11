@@ -191,6 +191,10 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-#add_executable()
+add_executable(maze_bot_controller src/maze_bot_controller.cpp)
+add_dependencies(maze_bot_controller ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(maze_bot_controller ${catkin_LIBRARIES})
 
-#add_executable()
+add_executable(mission_checker src/mission_checker.cpp)
+add_dependencies(mission_checker ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(mission_checker ${catkin_LIBRARIES})

@@ -3,8 +3,8 @@
 #include "sensor_msgs/LaserScan.h"
 #include "maze_solving_bot/ReqRobotControl.h"
 
-class Maze_bot {
-private:
+class Mazebot {
+protected:
 	ros::NodeHandle nh_;
 	ros::Publisher pub_;
 	ros::Subscriber sub_;
@@ -18,12 +18,14 @@ private:
 	
 
 public:
-	Maze_bot(void) {
+	Mazebot(void) {
 		pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
-		sub_ = nh_.subscribe("/scan", 1, msgCallback);
-		serv_ = nh_.serviceServer("/req_robot_control", manipulation);
-	
+		sub_ = nh_.subscribe("/scan", 1, &Mazebot::msgCallback, this);
+		serv_ = nh_.advertiseService("/req_robot_control", &Mazebot::manipulation, this);
 		ROS_INFO("MAZEBOT READY FOR ACTION.");
+	}
+
+	~Mazebot(void) {
 	}
 	
 	void msgCallback(const sensor_msgs::LaserScan::ConstPtr& msg) {
@@ -31,7 +33,7 @@ public:
 		wallFollow();
 	}
 
-	bool manipulation(maze_solving_bot::ReqRobotControl::Request &req, maze_solving_bot::ReqRobotControl::Request &res) {
+	bool manipulation(maze_solving_bot::ReqRobotControl::Request &req, maze_solving_bot::ReqRobotControl::Response &res) {
 		if (req.flag == true) {
 			// publish /cmd_vel to bot.
 			msg_.linear.x = linear_x_;
@@ -49,21 +51,23 @@ public:
 			return true;
 		}
 		else {
-			ROS_INFO("INVALID REQUEST.");
+			ROS_INFO("INVALID REQUEST, SERVICE REQUEST NOT RECEIEVED.");
 			return false;
 		}
 	}
 	
 	// maze solving algorithm
-	void wallFollow() {
+	void wallFollow(const sensor_msgs::LaserScen::ConstPtr& msg) {
 		
+		
+		ROS_INFO("VELOCITY, STEER UP TO DATE.");	
 	}	
 };
 
 int main(int argc, char **argv) {
-	ros::init(argc, argv, "maze_controller");
-	Maze_bot bot;
-	ros::spin()
+	ros::init(argc, argv, "maze_bot_controller");
+	Mazebot bot;
+	ros::spin();
 
 	return 0;
 }
