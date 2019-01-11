@@ -52,13 +52,12 @@ public:
 
 		ROS_INFO("CURRENT XPOS = %f", cur_xpos_);
 		ROS_INFO("CURRENT YPOS = %f", cur_ypos_);
-
-		isArrived(cur_xpos_, cur_ypos_);
 	}
-
+	
 	void executeCB(const maze_action_msg::MazeProjectGoalConstPtr &goal) {
 		ros::Rate loop_rate(10);	
 		bool success = true;
+		bool is_success = false;
 		bool is_preempted = false;	
 		
 		ROS_INFO("ACTION SERVER	ACTIVATED.");
@@ -74,7 +73,11 @@ public:
 			srv_.request.flag = true;
 			
 			if (cli_.call(srv_)) {
-				ROS_INFO("SERVICE RESPONSE RECEIEVED.");	
+				ROS_INFO("SERVICE RESPONSE RECEIEVED.");
+				if (srv_.response.mission_flag) {
+					flag = true;
+					is_success = true;
+				}	
 			}
 			else {
 				ROS_INFO("SERVICE RESPONSE NOT RECEIEVED.");
@@ -88,23 +91,11 @@ public:
 			loop_rate.sleep();
 		}
 		
-		if (is_preempted) {
+		if (is_preempted || is_success) {
 			result_.success = success;
 			ROS_INFO("GOAL SUCCEEDED, SENDING RESULT");
 			as_.setSucceeded(result_); 
-		}
-	}
-
-	void isArrived(float cur_xpos, float cur_ypos) {
-		float dist = sqrt((goal_xpos_ - cur_xpos)*(goal_xpos_ - cur_xpos) + (goal_ypos_ - cur_ypos)*(goal_ypos_ - cur_ypos));
-		
-		if (dist <= min_dist_) {
-			ROS_INFO("SUCCESSFULLY ARRIVED AT DESTINATION.");
-			flag = true;
-		}
-		else {
-			ROS_INFO("MAZEBOT ON THE WAY TO DESTINATION.");
-		}
+		}	
 	}
 };
 

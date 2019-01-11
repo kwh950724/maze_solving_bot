@@ -18,6 +18,9 @@ protected:
 	// float range variable
 	float max_range_;
 	float min_range_;
+		
+	bool is_finish_;
+
 public:
 	Mazebot(void) {
 		pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
@@ -25,6 +28,7 @@ public:
 		serv_ = nh_.advertiseService("/req_robot_control", &Mazebot::manipulation, this);
 		max_range_ = 2.5;
 		min_range_ = 0.5;
+		is_finish_ = false;
 		ROS_INFO("MAZEBOT READY FOR ACTION.");
 	}
 
@@ -50,7 +54,10 @@ public:
 			ROS_INFO("STEER: %f", angular_z_); 
 		
 			pub_.publish(msg_);
-		
+			
+			if (is_finish_) {
+				res.mission_flag = true;
+			}	
 			ROS_INFO("SUCCESSFULLY MANIPULATE MAZEBOT.");
 			return true;
 		}
@@ -90,9 +97,17 @@ public:
 		ROS_INFO("RIGHT COUNT = %d, RIGHT CLASH COUNT = %d", right_count, right_clash_count);
 	
 		if (left_count == right_count) {
-			ROS_INFO("GO STRAIGHT.");
-			linear_x_ = 0.3;
-			angular_z_ = 0;
+			if (left_count == 0 && right_count == 0) {
+				ROS_INFO("ARRIVED AT DESTINATION, STOP.");
+				is_finish_ = true;
+				linear_x_ = 0;
+				angular_z_ = 0;
+			}
+			else {
+				ROS_INFO("GO STRAIGHT.");
+				linear_x_ = 0.3;
+				angular_z_ = 0;
+			}
 		}
 		else if (left_count < right_count) {
 			ROS_INFO("TURN LEFT.");
