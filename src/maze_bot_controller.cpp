@@ -10,6 +10,7 @@ protected:
 	ros::Subscriber sub_;
 	ros::ServiceServer serv_;
 	geometry_msgs::Twist msg_;
+	sensor_msgs::LaserScan scan_;
 
 	float linear_x_;
 	float angular_z_;
@@ -30,7 +31,8 @@ public:
 	
 	void msgCallback(const sensor_msgs::LaserScan::ConstPtr& msg) {
 		// calculate && renew linear_x_, angular_x_;
-		wallFollow();
+		scan_ = *msg;
+		wallFollow(scan_);
 	}
 
 	bool manipulation(maze_solving_bot::ReqRobotControl::Request &req, maze_solving_bot::ReqRobotControl::Response &res) {
@@ -57,9 +59,18 @@ public:
 	}
 	
 	// maze solving algorithm
-	void wallFollow(const sensor_msgs::LaserScen::ConstPtr& msg) {
-		
-		
+	void wallFollow(const sensor_msgs::LaserScan scan) {
+		float head_dist = scan.ranges[0];
+		if (head_dist < 0.6) {
+			linear_x_ = 0;
+			angular_z_ = 0.2;
+			ROS_WARN("WALL AHEAD, EMERGENCY STOP.");
+		}
+		else {
+			linear_x_ = 0.3;
+			angular_z_ = 0;
+		}
+				
 		ROS_INFO("VELOCITY, STEER UP TO DATE.");	
 	}	
 };
